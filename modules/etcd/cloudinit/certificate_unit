@@ -1,0 +1,33 @@
+[Unit]
+Description=SSL certificate generation
+Wants=network-online.target
+After=download-ssl.service network-online.target 
+Before=etcd-member.service etcd-bootstrap.service
+ConditionFileNotEmpty=!/etc/ssl/certs/etcd-key.pem
+ConditionFileNotEmpty=!/etc/ssl/certs/etcd.csr
+ConditionFileNotEmpty=!/etc/ssl/certs/etcd.pem
+
+[Service]
+Type=oneshot
+WorkingDirectory=/etc/ssl/certs
+ExecStartPre=/usr/bin/rkt run \
+    --net=host \
+    --trust-keys-from-https \
+    --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true --mount volume=dns,target=/etc/resolv.conf \
+    --volume=ssl,kind=host,source=/etc/ssl,readOnly=false --mount=volume=ssl,target=/etc/ssl \
+    quay.io/coreos/awscli -- bash -c "aws s3 cp s3://${s3_pki_bucket}/service-account-key.pem /etc/ssl/certs/service-account-key.pem"
+ExecStartPre=/usr/bin/rkt run \
+    --net=host \
+    --trust-keys-from-https \
+    --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true --mount volume=dns,target=/etc/resolv.conf \
+    --volume=ssl,kind=host,source=/etc/ssl,readOnly=false --mount=volume=ssl,target=/etc/ssl \
+    quay.io/coreos/awscli -- bash -c "aws s3 cp s3://${s3_pki_bucket}/ca.pem /etc/ssl/certs/ca.pem"
+ExecStartPre=/bin/bash -c '/bin/echo \'{"CN":"etcd","hosts":[""],"key":{"algo":"rsa","size":2048}}\' > /etc/ssl/certs/csr.json'
+ExecStartPre=/bin/bash -c 'cd /etc/ssl/certs && /opt/bin/cfssl gencert \
+-remote=${pki_host}:8888 \
+-profile="client-server" \
+-hostname="*.${discovery_domain_name},*.ec2.internal" /etc/ssl/certs/csr.json | /opt/bin/cfssljson -bare etcd'
+ExecStart=/bin/bash -c '/bin/chmod 0644 /etc/ssl/certs/etcd*'
+
+[Install]
+WantedBy=multi-user.target

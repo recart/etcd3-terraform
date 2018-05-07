@@ -1,0 +1,24 @@
+[Unit]
+After=download-ssl.service
+Wants=network-online.target
+After=network-online.target
+ConditionFileIsExecutable=/opt/bin/cfssl
+Description=Start up cfssl service
+[Service]
+ExecStartPre=/usr/bin/mkdir -p /etc/cfssl
+ExecStartPre=/usr/bin/rkt run \
+    --net=host \
+    --trust-keys-from-https \
+    --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true --mount volume=dns,target=/etc/resolv.conf \
+    --volume=ssl,kind=host,source=/etc/cfssl,readOnly=false --mount=volume=ssl,target=/etc/cfssl \
+    quay.io/coreos/awscli -- bash -c "aws s3 sync s3://${s3_bucket }/ /etc/cfssl/"
+ExecStart=/opt/bin/cfssl serve \
+    -address 0.0.0.0 \
+    -ca /etc/cfssl/ca.pem \
+    -ca-key /etc/cfssl/ca-key.pem \
+    -config /etc/cfssl/ca-config.json
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

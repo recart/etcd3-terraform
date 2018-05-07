@@ -1,0 +1,7 @@
+ETCD_CA_FILE=/etc/ssl/certs/ca.pem
+ETCD_CERT_FILE=/etc/ssl/certs/etcd.pem
+ETCD_KEY_FILE=/etc/ssl/certs/etcd-key.pem
+ETCDCTL_CA_FILE=/etc/ssl/certs/ca.pem
+ETCDCTL_CERT_FILE=/etc/ssl/certs/etcd.pem
+ETCDCTL_KEY_FILE=/etc/ssl/certs/etcd-key.pem
+ETCDCTL_ENDPOINT=https://${peer_name}.${discovery_domain_name}:2379

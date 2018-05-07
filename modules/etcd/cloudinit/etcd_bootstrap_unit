@@ -1,0 +1,27 @@
+[Unit]
+Wants=network-online.target
+After=network-online.target
+Before=etcd-member.service
+After=certificate.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/mkdir -p /opt/bin
+ExecStartPre=/usr/bin/rkt run \
+    --net=host \
+    --trust-keys-from-https \
+    --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true --mount volume=dns,target=/etc/resolv.conf \
+    --volume=ssl,kind=host,source=/opt/bin,readOnly=false --mount=volume=ssl,target=/opt/bin \
+    quay.io/coreos/awscli -- bash -c "aws s3 cp s3://${s3_bucket}/etcd3-bootstrap-linux-amd64 /opt/bin/etcd3-bootstrap"
+ExecStartPre=/usr/bin/chmod +x /opt/bin/etcd3-bootstrap
+RemainAfterExit=true
+ExecStart=/opt/bin/etcd3-bootstrap \
+    -ebs-volume-name=${peer_name}-ssd.${discovery_domain_name} \
+    -block-device=/dev/xvdf \
+    -aws-region=${region} \
+    -mount-point=/var/lib/etcd \
+    -filesystem-type=xfs \
+    -filesystem-arguments=-f
+
+[Install]
+WantedBy=etcd-member.service

@@ -1,0 +1,62 @@
+{
+    "ignition": {
+        "version": "2.0.0"
+    },
+    "storage": {
+        "files": [{
+          "filesystem": "root",
+          "path": "/etc/environment",
+          "mode": 644,
+          "contents": { "source": "data:;base64,${base64encode(environment_file)}" }
+          }]
+    },
+    "systemd": {
+        "units": [
+            {
+                "name": "locksmithd.service",
+                "enable": true
+            },
+            {
+                "name": "download-cfssl.service",
+                "enable": true,
+                "contents": ${jsonencode(download_cfssl_unit)
+                }
+            },
+            {
+                "name": "certificate.service",
+                "enable": true,
+                "contents": ${jsonencode(certificate_unit)
+                }
+            },
+            {
+                "name": "etcd-bootstrap.service",
+                "enable": true,
+                "contents": ${jsonencode(etcd_bootstrap_unit)
+                }
+            },
+            {
+                "name": "etcd-member.service",
+                "enable": true,
+                "dropins": [
+                    {
+                        "name": "20-clct-etcd-member.conf",
+                        "contents": ${jsonencode(etcd_member_unit)
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "ntpdate.service",
+                "enable": true,
+                "contents": ${jsonencode(ntpdate_unit)
+                }
+            },
+            {
+                "name": "ntpdate.timer",
+                "enable": true,
+                "contents": ${jsonencode(ntpdate_timer_unit)
+                }
+            }
+        ]
+    }
+}
