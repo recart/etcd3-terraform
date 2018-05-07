@@ -1,17 +1,25 @@
 provider "aws" {
-  region = "eu-west-1"
+  region  = "us-east-1"
+  profile = "dev"
+}
+
+provider "spotinst" {
+  token   = "a8e6b4d417a4d345718d1da28b973eaea97651edcac2d3034544ee10512c80b7"
+  account = "act-beb541df"
+}
+
+variable "aws" {
+  type = "map"
+
+  default {
+    region     = "us-east-1"
+    account_id = "010041307211"
+    azs        = "us-east-1a,us-east-1b,us-east-1c,us-east-1d,us-east-1e,us-east-1f"
+  }
 }
 
 variable "instance_type" {
-  default = "c4.large"
-}
-
-variable "region" {
-  default = "eu-west-1"
-}
-
-variable "azs" {
-  default = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+  default = "t2.medium"
 }
 
 variable "environment" {
@@ -23,7 +31,7 @@ variable "role" {
 }
 
 variable "ami" {
-  default = "ami-a0ff1ed9"
+  default = "ami-9e2685e3"
 }
 
 variable "vpc_cidr" {
@@ -34,16 +42,34 @@ variable "dns" {
   type = "map"
 
   default = {
-    domain_name = "example.com"
+    domain_name = "infrastracture.local"
   }
 }
 
-variable "root_key_pair_public_key" {}
+variable "ssl_upload" {
+  default = false
+}
+
+variable "key_name" {
+  default = "david-key"
+}
 
 variable "cluster_size" {
-  default = 9
+  default = 3
 }
 
 variable "ntp_host" {
   default = "0.europe.pool.ntp.org"
+}
+
+variable "name" {
+  default = "etcd"
+}
+
+variable "bastion_cidr" {
+  default = "0.0.0.0/0"
+}
+
+variable "src_version" {
+  default = "0.1"
 }
