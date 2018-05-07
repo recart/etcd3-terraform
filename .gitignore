@@ -3,3 +3,10 @@
 /terraform.tfstate.*
 /.terraform.tfstate.*
 /files/lambda-dns-service.dist.zip
+ssl/*.pem
+*.pem
+*.csr
+modules/lambda/files/*
+!modules/lambda/files/.keep
+terraform.plan
+terraform.plan.out

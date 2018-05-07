@@ -1,44 +1,65 @@
-resource "aws_key_pair" "default" {
-  key_name   = "${var.role}"
-  public_key = "${var.root_key_pair_public_key}"
-}
+module "iam_pki" {
+  source = "modules/tf_aws_iam/iam_instance_profile"
+  name   = "${var.environment}-pki"
 
-resource "aws_iam_role" "default" {
-  name = "${var.role}.${var.region}.i.${var.environment}.${var.dns["domain_name"]}"
-
-  assume_role_policy = <<EOF
+  assume_role_policy = <<EOS
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
       "Effect": "Allow",
-      "Sid": ""
-    }
+      "Principal": { "Service": "ec2.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+   }
   ]
 }
-EOF
+EOS
+
+  iam_role_policy = <<EOS
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "${ module.s3_pki.bucket_arn}"
+            ]
+       },
+        {
+            "Action": [
+                "s3:Get*"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "${ module.s3_pki.bucket_arn}/*"
+            ]
+       }
+    ]
+}
+EOS
 }
 
-resource "aws_iam_instance_profile" "default" {
-  name       = "${var.role}.${var.region}.i.${var.environment}.${var.dns["domain_name"]}"
-  role       = "${var.role}.${var.region}.i.${var.environment}.${var.dns["domain_name"]}"
-  depends_on = ["aws_iam_role.default"]
+module "iam_etcd" {
+  source = "modules/tf_aws_iam/iam_instance_profile"
+  name   = "${var.environment}-etcd"
+
+  assume_role_policy = <<EOS
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "ec2.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+   }
+  ]
 }
+EOS
 
-resource "aws_iam_role_policy" "default" {
-  name       = "${var.role}.${var.region}.i.${var.environment}.${var.dns["domain_name"]}"
-  role       = "${aws_iam_role.default.name}"
-  depends_on = ["aws_iam_role.default"]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  policy = <<EOF
+  iam_role_policy = <<EOS
 {
   "Version": "2008-10-17",
   "Statement": [
@@ -53,15 +74,22 @@ resource "aws_iam_role_policy" "default" {
         "ec2:DetachVolume"
       ],
       "Resource": "*"
-    },
+   },
+           {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+      "Resource": ["${ module.s3_pki.bucket_arn}","${ module.s3_etcd.bucket_arn}"]
+       },
     {
       "Effect": "Allow",
       "Action": [
         "s3:GetObject"
       ],
-      "Resource": "*"
-    }
+      "Resource": ["${ module.s3_pki.bucket_arn}/*","${ module.s3_etcd.bucket_arn}/*"]
+   }
   ]
 }
-EOF
+EOS
 }
